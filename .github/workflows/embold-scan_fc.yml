@@ -1,13 +1,13 @@
-# .github/workflows/embold-scan_fc.yml
+# .github/workflows/embold-scan.yml
 
-name: Embold Code Quality Scan
+name: Embold Code Quality Scan with FC
 
 # This workflow runs on every push to the 'main' branch
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
   workflow_dispatch: 
 
 jobs:
