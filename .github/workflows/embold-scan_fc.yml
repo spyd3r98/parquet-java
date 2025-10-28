@@ -27,22 +27,30 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Step 3: Build the project and run SpotBugs
+      # --- START MODIFICATION ---
+      # Step 3: Install Apache Thrift Compiler
+      - name: Install Thrift Compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y thrift-compiler
+      # --- END MODIFICATION ---
+
+      # Step 4: Build the project and run SpotBugs (Now Step 4, was Step 3)
       - name: Build with Maven and Run Analysis
         run: mvn clean verify -Drat.skip=true -DskipTests
 
-      # Step 4: Download and extract the Embold scanner
+      # Step 5: Download and extract the Embold scanner (Now Step 5, was Step 4)
       - name: Download and Extract Scanner
         run: |
           curl https://v1.embold.io/nfs/CLI/browserstack-codequality-scanner.tar.gz -o browserstack-codequality-scanner-archive.tar.gz
           tar xvf browserstack-codequality-scanner-archive.tar.gz
 
-      # Step 5: Download the repository configuration file
+      # Step 6: Download the repository configuration file (Now Step 6, was Step 5)
       - name: Download Repository Configuration
         run: |
           curl --silent --location --request GET "http://18.184.13.138:3089/api/v1/repositories/69ec2479ff945a864a3d9d93d2434601/scans/config/download" --header "Authorization: Bearer ${{ secrets.EMBOLD_SCAN_TOKEN_FC }}" -o repository-configuration.json
 
-      # Step 6: Run the Embold analysis scanner
+      # Step 7: Run the Embold analysis scanner (Now Step 7, was Step 6)
       - name: Run Embold Scanner
         env:
           EMBOLD_TOKEN: ${{ secrets.EMBOLD_SCAN_TOKEN_FC }}
