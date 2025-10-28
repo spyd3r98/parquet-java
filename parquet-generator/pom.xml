@@ -46,6 +46,10 @@
       </resource>
     </resources>
     <plugins>
+    <plugin>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-maven-plugin</artifactId>
+            </plugin>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
       </plugin>
