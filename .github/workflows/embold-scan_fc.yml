@@ -1,3 +1,5 @@
+# .github/workflows/embold-scan_fc.yml
+
 name: Embold Code Quality Scan
 
 on:
@@ -29,8 +31,10 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          # Dependencies needed to build Thrift from source
+          # Dependencies needed to build Thrift from source. libssl-dev provides libcrypto.
           sudo apt-get install -y automake libtool flex bison pkg-config libboost-all-dev libssl-dev
+          # Ensure essential build tools are present
+          sudo apt-get install -y build-essential
 
       # --- START MODIFICATION (Install Thrift 0.9.3) ---
       # Step 4: Install Apache Thrift Compiler 0.9.3 (Required for Parquet)
@@ -43,7 +47,13 @@ jobs:
           curl -sSL $THRIFT_URL -o thrift.tar.gz
           tar xzf thrift.tar.gz
           cd thrift-$THRIFT_VERSION
+          # Run './bootstrap.sh' first, which is often required for older Thrift versions 
+          # to generate the configure script correctly, especially after checkout.
+          ./bootstrap.sh
+          
+          # We keep the original configure flags. The './bootstrap.sh' step should fix the libcrypto detection.
           ./configure --without-tests --disable-csharp --disable-netcore --disable-php --disable-py --disable-rb
+          
           sudo make install
           
           # Verify installation (should output 0.9.3)
@@ -71,5 +81,4 @@ jobs:
         env:
           EMBOLD_TOKEN: ${{ secrets.EMBOLD_SCAN_TOKEN_FC }}
         run: |
-          ./browserstack-codequality-scanner/bin/embold-scanner analyse \
-            -u http://
+          ./browserstack-codequality-scanner/bin/embold
