@@ -1,5 +1,3 @@
-# .github/workflows/embold-scan_fc.yml
-
 name: Embold Code Quality Scan
 
 on:
@@ -27,40 +25,51 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # --- START MODIFICATION ---
-      # Step 3: Install Apache Thrift Compiler
-      - name: Install Thrift Compiler
+      # Step 3: Install Required Build Dependencies
+      - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y thrift-compiler
+          # Dependencies needed to build Thrift from source
+          sudo apt-get install -y automake libtool flex bison pkg-config libboost-all-dev libssl-dev
+
+      # --- START MODIFICATION (Install Thrift 0.9.3) ---
+      # Step 4: Install Apache Thrift Compiler 0.9.3 (Required for Parquet)
+      - name: Install Specific Thrift Compiler 0.9.3
+        run: |
+          THRIFT_VERSION="0.9.3"
+          THRIFT_URL="https://archive.apache.org/dist/thrift/$THRIFT_VERSION/thrift-$THRIFT_VERSION.tar.gz"
+          
+          # Download, extract, and build the specific version
+          curl -sSL $THRIFT_URL -o thrift.tar.gz
+          tar xzf thrift.tar.gz
+          cd thrift-$THRIFT_VERSION
+          ./configure --without-tests --disable-csharp --disable-netcore --disable-php --disable-py --disable-rb
+          sudo make install
+          
+          # Verify installation (should output 0.9.3)
+          thrift -version
       # --- END MODIFICATION ---
 
-      # Step 4: Build the project and run SpotBugs (Now Step 4, was Step 3)
+      # Step 5: Build the project and run SpotBugs (Now Step 5, was Step 4)
       - name: Build with Maven and Run Analysis
+        # Ensure 'verify' succeeds now that thrift is installed
         run: mvn clean verify -Drat.skip=true -DskipTests
 
-      # Step 5: Download and extract the Embold scanner (Now Step 5, was Step 4)
+      # Step 6: Download and extract the Embold scanner (Now Step 6, was Step 5)
       - name: Download and Extract Scanner
         run: |
           curl https://v1.embold.io/nfs/CLI/browserstack-codequality-scanner.tar.gz -o browserstack-codequality-scanner-archive.tar.gz
           tar xvf browserstack-codequality-scanner-archive.tar.gz
 
-      # Step 6: Download the repository configuration file (Now Step 6, was Step 5)
+      # Step 7: Download the repository configuration file (Now Step 7, was Step 6)
       - name: Download Repository Configuration
         run: |
           curl --silent --location --request GET "http://18.184.13.138:3089/api/v1/repositories/69ec2479ff945a864a3d9d93d2434601/scans/config/download" --header "Authorization: Bearer ${{ secrets.EMBOLD_SCAN_TOKEN_FC }}" -o repository-configuration.json
 
-      # Step 7: Run the Embold analysis scanner (Now Step 7, was Step 6)
+      # Step 8: Run the Embold analysis scanner (Now Step 8, was Step 7)
       - name: Run Embold Scanner
         env:
           EMBOLD_TOKEN: ${{ secrets.EMBOLD_SCAN_TOKEN_FC }}
         run: |
           ./browserstack-codequality-scanner/bin/embold-scanner analyse \
-            -u http://18.184.13.138:3089 \
-            -t $EMBOLD_TOKEN \
-            -r 69ec2479ff945a864a3d9d93d2434601 \
-            -b . \
-            -d ./embold-data \
-            -c ./repository-configuration.json \
-            -l ./embold-log \
-            -sh ./embold-scanner-home
+            -u http://
