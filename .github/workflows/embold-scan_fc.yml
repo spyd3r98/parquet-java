@@ -1,84 +1,47 @@
-# .github/workflows/embold-scan_fc.yml
+# .github/workflows/embold-scan.yml
 
 name: Embold Code Quality Scan
 
+# This workflow runs on every push to the 'main' branch
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-  workflow_dispatch:
+  workflow_dispatch: 
 
 jobs:
-  embold-scan_fc:
+  embold-scan:
+    # Use the latest version of Ubuntu to run the job
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out your repository code
+      # Step 1: Check out your repository code so the workflow can access it
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # Step 2: Set up the Java environment
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      # Step 3: Install Required Build Dependencies
-      - name: Install Build Dependencies
-        run: |
-          sudo apt-get update
-          # Dependencies needed to build Thrift from source. libssl-dev provides libcrypto.
-          sudo apt-get install -y automake libtool flex bison pkg-config libboost-all-dev libssl-dev
-          # Ensure essential build tools are present
-          sudo apt-get install -y build-essential
-
-      # --- START MODIFICATION (Install Thrift 0.9.3) ---
-      # Step 4: Install Apache Thrift Compiler 0.9.3 (Required for Parquet)
-      - name: Install Specific Thrift Compiler 0.9.3
-        run: |
-          THRIFT_VERSION="0.9.3"
-          THRIFT_URL="https://archive.apache.org/dist/thrift/$THRIFT_VERSION/thrift-$THRIFT_VERSION.tar.gz"
-          
-          # Download, extract, and build the specific version
-          curl -sSL $THRIFT_URL -o thrift.tar.gz
-          tar xzf thrift.tar.gz
-          cd thrift-$THRIFT_VERSION
-          # Run './bootstrap.sh' first, which is often required for older Thrift versions 
-          # to generate the configure script correctly, especially after checkout.
-          ./bootstrap.sh
-          
-          # We keep the original configure flags. The './bootstrap.sh' step should fix the libcrypto detection.
-          ./configure --without-tests --disable-csharp --disable-netcore --disable-php --disable-py --disable-rb
-          
-          sudo make install
-          
-          # Verify installation (should output 0.9.3)
-          thrift -version
-      # --- END MODIFICATION ---
-
-      # Step 5: Build the project and run SpotBugs (Now Step 5, was Step 4)
-      - name: Build with Maven and Run Analysis
-        # Ensure 'verify' succeeds now that thrift is installed
-        run: mvn clean verify -Drat.skip=true -DskipTests
-
-      # Step 6: Download and extract the Embold scanner (Now Step 6, was Step 5)
+      # Step 2: Download and extract the Embold scanner
       - name: Download and Extract Scanner
         run: |
           curl https://v1.embold.io/nfs/CLI/browserstack-codequality-scanner.tar.gz -o browserstack-codequality-scanner-archive.tar.gz
           tar xvf browserstack-codequality-scanner-archive.tar.gz
 
-      # Step 7: Download the repository configuration file (Now Step 7, was Step 6)
+      # Step 3: Download the repository configuration file using a secure token
       - name: Download Repository Configuration
         run: |
-          curl --silent --location --request GET "http://18.184.13.138:3089/api/v1/repositories/69ec2479ff945a864a3d9d93d2434601/scans/config/download" --header "Authorization: Bearer ${{ secrets.EMBOLD_SCAN_TOKEN_FC }}" -o repository-configuration.json
+          curl --silent --location --request GET "http://18.184.13.138:3089/api/v1/repositories/69ec2479ff945a864a3d9d93d2434601/scans/config/download" --header "Authorization: Bearer ${{ secrets.EMBOLD_SCAN_TOKEN_FC}}" -o repository-configuration.json
 
-      # Step 8: Run the Embold analysis scanner (Now Step 8, was Step 7)
+      # Step 4: Run the Embold analysis scanner
       - name: Run Embold Scanner
         env:
-          EMBOLD_TOKEN: ${{ secrets.EMBOLD_SCAN_TOKEN_FC }}
+          EMBOLD_TOKEN: ${{ secrets.EMBOLD_SCAN_TOKEN_FC}}
         run: |
-          ./browserstack-codequality-scanner/bin/embold
+          ./browserstack-codequality-scanner/bin/embold-scanner analyse \
+            -u http://3.66.212.6:3000/ \
+            -t $EMBOLD_TOKEN \
+            -r 69ec2479ff945a864a3d9d93d2434601 \
+            -b . \
+            -d ./embold-data \
+            -c ./repository-configuration.json \
+            -l ./embold-log \
+            -sh ./embold-scanner-home
