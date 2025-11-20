@@ -12,7 +12,7 @@ on:
 
 jobs:
   embold-scan:
-    # Use the latest version of Ubuntu to run the job
+    ## Use the latest version of Ubuntu to run the job
     runs-on: ubuntu-latest
 
     steps:
